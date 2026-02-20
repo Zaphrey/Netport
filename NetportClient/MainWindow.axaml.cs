@@ -214,21 +214,22 @@ public partial class MainWindow : Window
 
     private async Task InitServerConnection()
     {
+        // https://stackoverflow.com/questions/40616911/c-sharp-udp-broadcast-and-receive-example
+        // Use UDP broadcasting to send data across the local network, 
+        // which the server will receive and respond with the server's ip address
+        UdpClient udpClient = new UdpClient()
+        {
+            EnableBroadcast = true
+        };
+
+        byte[] message = Encoding.UTF8.GetBytes("SERVER_ADDRESS");
+
+        IPEndPoint broadcastEndpoint = new IPEndPoint(IPAddress.Broadcast, _serverPort);
+        
         while (true)
         {
             try
             {
-                // https://stackoverflow.com/questions/40616911/c-sharp-udp-broadcast-and-receive-example
-                // Use UDP broadcasting to send data across the local network, 
-                // which the server will receive and respond with the server's ip address
-                UdpClient udpClient = new UdpClient(_serverPort)
-                {
-                    EnableBroadcast = true
-                };
-
-                byte[] message = Encoding.UTF8.GetBytes("SERVER_ADDRESS");
-
-                IPEndPoint broadcastEndpoint = new IPEndPoint(IPAddress.Broadcast, _serverPort);
                 await udpClient.SendAsync(message, message.Length, broadcastEndpoint);
 
                 var data = await udpClient.ReceiveAsync();
