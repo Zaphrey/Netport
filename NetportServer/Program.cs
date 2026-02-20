@@ -16,6 +16,8 @@ class Program
 
         IPHostEntry ipHostInfo = await Dns.GetHostEntryAsync(hostName);
 
+        _ = Task.Run(HandleServerAddressRequests);
+
         while (true)
         {
             try
@@ -33,7 +35,7 @@ class Program
 
     static async Task HandleIncomingConnections()
     {
-        TcpListener listener = new(_server.GetLocalIPv4Address(), _server.ConnectionPort);
+        TcpListener listener = new(IPAddress.Any, _server.ConnectionPort);
 
         listener.Start();
 
@@ -46,6 +48,26 @@ class Program
             Thread connection = new Thread(CreateClientThread);
 
             connection.Start(handler);
+        }
+    }
+
+    static async Task HandleServerAddressRequests()
+    {
+        UdpClient listener = new UdpClient();
+        listener.Client.Bind(new IPEndPoint(IPAddress.Broadcast, _server.ConnectionPort));
+
+        while (true)
+        {
+            var result = await listener.ReceiveAsync();
+            string message = Encoding.UTF8.GetString(result.Buffer);
+
+            if (message == "SERVER_ADDRESS")
+            {
+                byte[] response = Encoding.UTF8.GetBytes(_server.GetLocalIPv4Address().ToString());
+
+                // Send a response back to the requester
+                await listener.SendAsync(response, response.Length, result.RemoteEndPoint);
+            }
         }
     }
 

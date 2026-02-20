@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private int _serverPort;
     // Port 0 leaves it up to the os to decide
     private TcpListener _listener;
+    private IPAddress? serverAddress;
     
     public MainWindow()
     {
@@ -217,8 +218,26 @@ public partial class MainWindow : Window
         {
             try
             {
+                // https://stackoverflow.com/questions/40616911/c-sharp-udp-broadcast-and-receive-example
+                // Use UDP broadcasting to send data across the local network, 
+                // which the server will receive and respond with the server's ip address
+                UdpClient udpClient = new UdpClient(_serverPort)
+                {
+                    EnableBroadcast = true
+                };
+
+                byte[] message = Encoding.UTF8.GetBytes("SERVER_ADDRESS");
+
+                IPEndPoint broadcastEndpoint = new IPEndPoint(IPAddress.Broadcast, _serverPort);
+                await udpClient.SendAsync(message, message.Length, broadcastEndpoint);
+
+                var data = await udpClient.ReceiveAsync();
+                string serverAddressStr = Encoding.UTF8.GetString(data.Buffer);
+                IPAddress serverAddress = IPAddress.Parse(serverAddressStr);
+
+
                 _client = new TcpClient();
-                var ipEndpoint = new IPEndPoint(_clientUtility.GetLocalIPv4Address(), _serverPort);
+                var ipEndpoint = new IPEndPoint(serverAddress, _serverPort);
                 await _client.ConnectAsync(ipEndpoint);
                 NetworkStream stream = _client.GetStream();
             
