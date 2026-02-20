@@ -94,7 +94,6 @@ public partial class MainWindow : Window
 
         void UpdateDownloadProgress(object? sender, (string fileName, double progress) args)
         {
-            Console.WriteLine(args);
             if (args.fileName != fileName)
                 return;
             
@@ -288,28 +287,27 @@ public partial class MainWindow : Window
 
         if (topLevel?.StorageProvider is { } storageProvider)
         {
-
-            var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            Dispatcher.UIThread.Post(async () =>
             {
-                Title = "Select files to upload",
-                AllowMultiple = true,
-            });
-            
-            foreach (var file in files)
-            {
-                using (Stream stream = await file.OpenReadAsync())
+                var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
                 {
-                    await _clientUtility.SendFile(networkStream, stream, file.Name);
+                    Title = "Select files to upload",
+                    AllowMultiple = true,
+                });
+
+                foreach (var file in files)
+                {
+                    using (Stream stream = await file.OpenReadAsync())
+                    {
+                        await _clientUtility.SendFile(networkStream, stream, file.Name);
+                    }
                 }
-            }
+            });
         }
     }
 
     private async Task OnConnectionAdded(Connection newConnection)
     {
-        Console.WriteLine($"New connection: {newConnection.ConnectionName} at {newConnection.ConnectionAddress}:{newConnection.ConnectionPort}");
-        Console.WriteLine(newConnection.GetHashCode());
-
         await ConnectToPeer(newConnection);
         
         Dispatcher.UIThread.Post(() =>
@@ -322,13 +320,12 @@ public partial class MainWindow : Window
             Button connectionInfo = new Button
             {
                 Tag = newConnection,
-                Content =
-                    $"{newConnection.ConnectionName} on port {newConnection.ConnectionPort}",
+                Content = $"{newConnection.ConnectionName}",
             };
-            Console.WriteLine(newConnection.GetHashCode());
+
             connectionInfo.Click += async (_, _) =>
             {
-                Console.WriteLine(newConnection.GetHashCode());
+
                 if (newConnection.ConnectionStream is null)
                 {
                     return;

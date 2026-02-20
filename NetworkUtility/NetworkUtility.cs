@@ -133,13 +133,10 @@ public class NetworkUtility
     public virtual async Task HandleConnectedClient(TcpClient client, bool isServer = false)
     {
         NetworkStream stream = client.GetStream();
-
-        await SendMessage(stream, $"Hello from {DeviceName}!");
         
         while (true)
         {
             var (command, size) = await GetMessageHeader(stream);
-            Console.WriteLine(((Command)command).ToString());
 
             CommandManager.CommandCall? commandDelegate = CommandManager[(Command)command];
 

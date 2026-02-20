@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Network;
 
 namespace client;
@@ -22,31 +23,15 @@ public class NetworkClient : NetworkUtility
     
     public NetworkClient()
     {
-        CommandManager[Command.FileParameters] += OnFileParametersCalled;
-        CommandManager[Command.GetConnections] += OnGetConnections;
-    }
-    
-    public override async Task HandleConnectedClient(TcpClient client, bool isServer = false)
-    {
-        NetworkStream stream = client.GetStream();
-
-        await SendMessage(stream, $"Hello from {DeviceName}!");
-        
-        while (true)
+        CommandManager[Command.FileParameters] += async (ulong size, NetworkStream stream) =>
         {
-            Console.WriteLine("WAITING FOR HEADER");
-
-            var (command, size) = await GetMessageHeader(stream);
-
-            Console.WriteLine($"RECEIVED COMMAND: {command}, SIZE: {size}");
-
-            CommandManager.CommandCall? commandDelegate = CommandManager[(Command)command];
-
-            if (commandDelegate is not null)
+            Dispatcher.UIThread.Post(async () =>
             {
-                await commandDelegate.Invoke(size, stream);
-            }
-        }
+                await OnFileParametersCalled(size, stream);
+            });
+        };
+        
+        CommandManager[Command.GetConnections] += OnGetConnections;
     }
 
     public async Task OnFileParametersCalled(ulong size, NetworkStream stream)
@@ -79,8 +64,6 @@ public class NetworkClient : NetworkUtility
             return;
         }
 
-        // string filePath = Path.GetFullPath(Path.Combine(DIRECTORY_OUTPUT, fileName));
-
         var saveFolder = await TopLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
             Title = "Select directory to save file in",
@@ -93,12 +76,6 @@ public class NetworkClient : NetworkUtility
         string directoryPath = saveFolder[0].Path.LocalPath;
         Console.WriteLine(directoryPath);
         string filePath = Path.GetFullPath(Path.Combine(directoryPath, Path.GetFileName(fileName)));
-
-        // if (!filePath.StartsWith(Path.GetFullPath(filePath) + Path.DirectorySeparatorChar))
-        // {
-        //     await SendMessage(stream, "Invalid file name");
-        //     return;
-        // }
 
         // Get the command byte
         byte[] commandBuffer = new byte[1];
@@ -135,21 +112,16 @@ public class NetworkClient : NetworkUtility
 
             bytesTotal += (ulong)toRead;
 
-            // Console.WriteLine($"Download Progress: {((float)bytesTotal / (float)payloadSize) * 100}");
             DownloadProgressUpdate.Invoke(this, (fileName, (double)bytesTotal/payloadSize * 100));
         }
 
         file.Close();
         
         DownloadStopped.Invoke(this, (fileName, true));
-
-        // Update the list on the client's end
-        // await SendHashSet(stream, GetFileList());
     }
 
     public async Task OnGetConnections(ulong size, NetworkStream stream)
     {
-        Console.WriteLine("ON GET CONNECTIONS CALLED");
         byte[] connectionBytes = new byte[size];
         await stream.ReadExactlyAsync(connectionBytes);
         
@@ -162,8 +134,6 @@ public class NetworkClient : NetworkUtility
             {
                 ConnectionAdded?.Invoke(this, newConnection);
             }
-            
-            // Console.WriteLine($"{newConnection.ConnectionName} {newConnection.ConnectionAddress}:{newConnection.ConnectionPort}"); 
         }
         
         // Compare entries in reverse order to see what entries in the current list aren't within the new list
@@ -173,8 +143,6 @@ public class NetworkClient : NetworkUtility
             {
                 ConnectionRemoved?.Invoke(this, oldConnection);
             }
-            
-            // Console.WriteLine($"{newConnection.ConnectionName} {newConnection.ConnectionAddress}:{newConnection.ConnectionPort}"); 
         }
 
         Connections = newConnections;

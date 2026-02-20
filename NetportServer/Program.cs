@@ -88,8 +88,8 @@ class Program
                     return;
 
                 byte[] content = new byte[size];
-                await stream.ReadExactlyAsync(content);
 
+                await stream.ReadExactlyAsync(content);
 
                 userConnection = JsonSerializer.Deserialize<Connection>(Encoding.UTF8.GetString(content));
 
@@ -126,7 +126,7 @@ class Program
                 await UpdateClientConnections();
             }
 
-            Console.WriteLine("CAUGHT " + e.Message);
+            Console.WriteLine(e.Message);
         }
     }
 
