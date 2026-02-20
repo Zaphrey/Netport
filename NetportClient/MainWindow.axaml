@@ -1,0 +1,46 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="100" d:DesignHeight="100"
+        Width="700"
+        Height="300"
+        x:Class="client.MainWindow"
+        Title="client">
+    
+    <Grid ColumnDefinitions="*, Auto, Auto" Background="#45454D">
+        <Border BorderThickness="1" BorderBrush="AliceBlue" CornerRadius="6" Padding="5">
+            <!-- <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Spacing="5"> -->
+            <!--     gr -->
+            <!-- </StackPanel> -->
+            <Grid RowDefinitions="Auto, *" RowSpacing="5">
+                <Button Click="Button_OnClick" Content="Upload"/>
+                <ScrollViewer Grid.Row="1" HorizontalAlignment="Stretch">
+                    <StackPanel Name="FileLabels" HorizontalAlignment="Stretch" Spacing="5" ClipToBounds="True">
+                        <Border BorderThickness="0, 1, 0, 0" BorderBrush="AliceBlue" Padding="0, 5, 0, 0">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <Button>Download</Button>
+                                <Button>Delete</Button>
+                                <TextBlock VerticalAlignment="Center">sdfkl;hjsdf.mp4</TextBlock>
+                                <TextBlock VerticalAlignment="Center">2GB</TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+        <Border Grid.Column="1" Padding="5" CornerRadius="6" BorderThickness="1" BorderBrush="AliceBlue">
+            <StackPanel Name="ConnectionList" HorizontalAlignment="Stretch">
+            
+            </StackPanel>
+        </Border>
+        <Border Padding="5" Grid.Column="2" BorderBrush="AliceBlue" CornerRadius="6" BorderThickness="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="300">
+            <StackPanel>
+                <TextBlock Margin="0, 0, 0, 5">Downloads</TextBlock>
+                <StackPanel Name="DownloadPanel">
+                    
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
