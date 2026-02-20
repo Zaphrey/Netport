@@ -248,7 +248,7 @@ public partial class MainWindow : Window
                 Connection userConnection =
                     new Connection($"{_clientUtility.GetLocalIPv4Address()}", port, Dns.GetHostName());
 
-                string serializedData = JsonSerializer.Serialize(userConnection);
+                string serializedData = JsonSerializer.Serialize(userConnection, SourceGenerationContext.Default.Connection);
             
                 byte[] payload = _clientUtility.CreatePayload(Command.GetConnections, Encoding.UTF8.GetBytes(serializedData));
                 await stream.WriteAsync(payload);
@@ -259,6 +259,9 @@ public partial class MainWindow : Window
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
+
+                // Wait a second before retrying
+                await Task.Delay(1000);
             }
         }
     }

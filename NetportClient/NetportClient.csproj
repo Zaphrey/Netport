@@ -22,4 +22,11 @@
     <ItemGroup>
       <ProjectReference Include="..\NetworkUtility\NetworkUtility.csproj" />
     </ItemGroup>
+    <!-- // https://avaloniaui.net/blog/the-definitive-guide-to-building-and-deploying-avalonia-applications-for-macos -->
+    <PropertyGroup>
+        <PublishSingleFile>true</PublishSingleFile>
+        <SelfContained>true</SelfContained>
+        <PublishTrimmed>true</PublishTrimmed>
+        <PublishReadyToRun>true</PublishReadyToRun>
+    </PropertyGroup>
 </Project>

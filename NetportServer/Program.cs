@@ -18,36 +18,32 @@ class Program
 
         _ = Task.Run(HandleServerAddressRequests);
 
-        while (true)
-        {
-            try
-            {
-                await HandleIncomingConnections();
-            }
-            catch (Exception e)
-            {
-                // Server is down, clear all connections
-                _server.Connections.Clear();
-                Console.WriteLine(e.Message);
-            }
-        }
+        await HandleIncomingConnections();
     }
 
     static async Task HandleIncomingConnections()
     {
-        TcpListener listener = new(IPAddress.Any, _server.ConnectionPort);
+        TcpListener listener = new(IPAddress.Any, _server.ServerPort);
 
         listener.Start();
 
-        while (true)
+        Console.WriteLine($"Server is listening at port: {_server.ServerPort}");
+
+        try
         {
-            Console.WriteLine($"Server is listening at port: {_server.ConnectionPort}");
+            while (true)
+            {
 
-            TcpClient handler = await listener.AcceptTcpClientAsync();
+                TcpClient handler = await listener.AcceptTcpClientAsync();
 
-            Thread connection = new Thread(CreateClientThread);
+                _ = Task.Run(() => CreateClientThread(handler));
 
-            connection.Start(handler);
+                // connection.Start(handler);
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
         }
     }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
@@ -120,8 +121,18 @@ public class NetworkClient : NetworkUtility
     {
         byte[] connectionBytes = new byte[size];
         await stream.ReadExactlyAsync(connectionBytes);
-        
-        HashSet<Connection> newConnections = await DecodeHashSet<Connection>(connectionBytes);
+
+        HashSet<Connection> newConnections;
+
+        using (MemoryStream memStream = new MemoryStream(connectionBytes))
+        {
+            HashSet<Connection>? deserializedEntries = await JsonSerializer.DeserializeAsync(memStream, SourceGenerationContext.Default.HashSetConnection);
+
+            if (deserializedEntries is null)
+                return;
+
+            newConnections = deserializedEntries;
+        }
 
         // Compare entries from the new list to see what's not inside the current list
         foreach (var newConnection in newConnections)

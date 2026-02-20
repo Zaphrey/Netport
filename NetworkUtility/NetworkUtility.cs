@@ -22,10 +22,23 @@ public enum Command : byte
     SendAvailablePort,
 }
 
+// https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/source-generation
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(Connection))]
+[JsonSerializable(typeof(HashSet<Connection>))]
+[JsonSerializable(typeof(FileListEntry))]
+[JsonSerializable(typeof(HashSet<FileListEntry>))]
+public partial class SourceGenerationContext : JsonSerializerContext { }
+
 public class Connection
 {
+    [JsonInclude]
     public string ConnectionAddress {get; set;}
+
+    [JsonInclude]
     public int ConnectionPort { get; set; }
+
+    [JsonInclude]
     public string ConnectionName { get; set; }
 
     [JsonIgnore]
@@ -193,14 +206,15 @@ public class NetworkUtility
 
         byte[] content = new byte[(int)size];
         await stream.ReadExactlyAsync(content);
-        
-        Console.WriteLine(Encoding.UTF8.GetString(content));
 
-        FileEntries = await DecodeHashSet<FileListEntry>(content);
-
-        foreach (FileListEntry entry in FileEntries)
+        using (MemoryStream memStream = new MemoryStream(content))
         {
-            Console.WriteLine($"{entry.Name} {entry.FileSize}");
+            HashSet<FileListEntry>? deserializedEntries = await JsonSerializer.DeserializeAsync(memStream, SourceGenerationContext.Default.HashSetFileListEntry);
+
+            if (deserializedEntries is null)
+                return;
+
+            FileEntries = deserializedEntries;
         }
     }
 
@@ -292,7 +306,7 @@ public class NetworkUtility
 
     public async Task SendFileListToConnections()
     {
-        string serializedNames = JsonSerializer.Serialize(GetFileList());
+        string serializedNames = JsonSerializer.Serialize(GetFileList(), SourceGenerationContext.Default.HashSetFileListEntry);
         byte[] fileNameBytes = Encoding.UTF8.GetBytes(serializedNames.ToArray());
         byte[] payload = CreatePayload(Command.FileNameList, fileNameBytes);
 
@@ -301,18 +315,6 @@ public class NetworkUtility
             Console.WriteLine($"{connection.ConnectionName} {connection.ConnectionAddress}:{connection.ConnectionPort}");
             if (connection.ConnectionStream is not null)
                 await connection.ConnectionStream.WriteAsync(payload);
-        }
-    }
-
-    public async Task<HashSet<T>> DecodeHashSet<T>(byte[] setData)
-    {
-        // string serializedNames = Encoding.UTF8.GetString(fileListData);
-        
-        using (MemoryStream stream = new MemoryStream(setData))
-        {
-            HashSet<T>? data = await JsonSerializer.DeserializeAsync<HashSet<T>>(stream);
-
-            return data is not null ? data : new HashSet<T>();
         }
     }
 
