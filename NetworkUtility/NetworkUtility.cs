@@ -82,6 +82,8 @@ public class NetworkUtility
 {
     // Port the server is listening on
     public int ConnectionPort { get; set; } = 8080;
+    public int ServerPort = 8080;
+    public int ServerAddressPort = 8081;
 
     public const string HEADER_SEPARATOR = "::";
     public const string HEADER_SETTER = "=";

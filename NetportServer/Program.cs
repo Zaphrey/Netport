@@ -54,7 +54,7 @@ class Program
     static async Task HandleServerAddressRequests()
     {
         UdpClient listener = new UdpClient();
-        listener.Client.Bind(new IPEndPoint(IPAddress.Broadcast, _server.ConnectionPort));
+        listener.Client.Bind(new IPEndPoint(IPAddress.Any, _server.ServerAddressPort));
 
         while (true)
         {

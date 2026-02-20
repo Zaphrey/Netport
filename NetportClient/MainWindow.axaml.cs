@@ -224,8 +224,8 @@ public partial class MainWindow : Window
 
         byte[] message = Encoding.UTF8.GetBytes("SERVER_ADDRESS");
 
-        IPEndPoint broadcastEndpoint = new IPEndPoint(IPAddress.Broadcast, _serverPort);
-        
+        IPEndPoint broadcastEndpoint = new IPEndPoint(IPAddress.Broadcast, _clientUtility.ServerAddressPort);
+
         while (true)
         {
             try
