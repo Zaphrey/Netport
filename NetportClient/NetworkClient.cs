@@ -23,14 +23,7 @@ public class NetworkClient : NetworkUtility
     
     public NetworkClient()
     {
-        CommandManager[Command.FileParameters] += async (ulong size, NetworkStream stream) =>
-        {
-            Dispatcher.UIThread.Post(async () =>
-            {
-                await OnFileParametersCalled(size, stream);
-            });
-        };
-        
+        CommandManager[Command.FileParameters] += OnFileParametersCalled;
         CommandManager[Command.GetConnections] += OnGetConnections;
     }
 
@@ -64,10 +57,13 @@ public class NetworkClient : NetworkUtility
             return;
         }
 
-        var saveFolder = await TopLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        var saveFolder = await Dispatcher.UIThread.InvokeAsync(async () =>
         {
-            Title = "Select directory to save file in",
-            AllowMultiple = false,
+            return await TopLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            {
+                Title = "Select directory to save file in",
+                AllowMultiple = false,
+            });
         });
         
         if (saveFolder.Count < 1) 
