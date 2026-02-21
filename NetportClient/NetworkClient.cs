@@ -148,7 +148,7 @@ public class NetworkClient : NetworkUtility
 
         using (MemoryStream memStream = new MemoryStream(connectionBytes))
         {
-            // Desetialize the connectionData asynchronously. The stream avoids string allocation according to this source
+            // Deserialize the connectionData asynchronously. The stream avoids string allocation according to this source
             // https://marcroussy.com/2020/08/17/deserialization-with-system-text-json/
             HashSet<Connection>? deserializedEntries = await JsonSerializer.DeserializeAsync(memStream, SourceGenerationContext.Default.HashSetConnection);
 
