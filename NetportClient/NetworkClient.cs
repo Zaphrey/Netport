@@ -85,7 +85,7 @@ public class NetworkClient : NetworkUtility
             return;
         }
 
-        // Get the payload size (ulong, 8 bytes)
+        // Get the payload size (ulong, 4 bytes)
         byte[] sizeBuffer = new byte[sizeof(ulong)];
         await stream.ReadExactlyAsync(sizeBuffer);
 
@@ -166,7 +166,7 @@ public class NetworkClient : NetworkUtility
             if (!Connections.Contains(newConnection) && newConnection.ConnectionPort != ConnectionPort)
             {
                 // Tell the client a new connection was added
-                ConnectionAdded.Invoke(this, newConnection);
+                ConnectionAdded?.Invoke(this, newConnection);
             }
         }
         
@@ -176,18 +176,7 @@ public class NetworkClient : NetworkUtility
             if (!newConnections.Contains(oldConnection) && oldConnection.ConnectionPort != ConnectionPort)
             {
                 // Tell the client that a previous connection was removed
-                ConnectionRemoved.Invoke(this, oldConnection);
-                
-                // Attempt to close the network stream if it wasn't closed already
-                try
-                {
-                    if (oldConnection.ConnectionStream is not null)
-                        oldConnection.ConnectionStream.Close();
-                } 
-                catch (Exception e)
-                {
-                   Console.WriteLine(e.Message); 
-                }
+                ConnectionRemoved?.Invoke(this, oldConnection);
             }
         }
 

@@ -52,6 +52,16 @@ public class Connection
 
 public record FileListEntry(string Name, long FileSize);
 
+/*
+    Takes in all the items in the Command enum and initalizes event delegates for them.
+    This makes creating command delegates (CommandCall) easier for new commands, and vice versa for old commands.
+
+    Connecting a handler to a CommandCall managed by the class example:
+    
+    CommandManager[Command.InvokeServer] += OnServerInvoke;
+
+    public async Task OnServerInvoke(ulong size, NetworkStream stream) { ... }
+*/
 public class CommandManager
 {
     public delegate Task CommandCall(ulong size, NetworkStream stream);
@@ -120,6 +130,21 @@ public class NetworkUtility
         CommandManager[Command.FileNameList] += OnFileNameListUpdate;
     }
 
+    /*
+        Creates a payload that allows for seamless communication between the client and server (or peer).
+
+        It's formatted as [command (byte)][payloadSize (ulong)][payload (byte[])].
+
+        The command manager creates event delegates for each command in the Command enum.
+
+        When the client or server receives a payload, it first reads the command byte and size of the payload
+        Once the header data is returned, the main network loop finds the related command event and invokes it.
+
+        Once the command is invoked, the payload size and client's network stream are provided to the event handlers.
+        From there, a buffer is created with the size provided, which is used to read the data from the stream into.
+
+        After that, the data can be decoded for that header, allowing the program to perform specific events for granular control
+    */
     public byte[] CreatePayload(Command command, byte[] content)
     {
         // Command size, payload size, and payload length
