@@ -11,11 +11,6 @@ class Program
 
     static async Task Main()
     {
-        Environment.SetEnvironmentVariable("app_environment", "server");
-        string hostName = Dns.GetHostName();
-
-        IPHostEntry ipHostInfo = await Dns.GetHostEntryAsync(hostName);
-
         _ = Task.Run(HandleServerAddressRequests);
 
         await HandleIncomingConnections();
@@ -23,42 +18,40 @@ class Program
 
     static async Task HandleIncomingConnections()
     {
-        TcpListener listener = new(IPAddress.Any, _server.ServerPort);
+        TcpListener listener = new(IPAddress.Any, _server.ConnectionPort);
 
         listener.Start();
 
-        Console.WriteLine($"Server is listening at port: {_server.ServerPort}");
-
-        try
+        while (true)
         {
-            while (true)
-            {
+            Console.WriteLine($"Server is listening at port: {_server.ConnectionPort}");
 
-                TcpClient handler = await listener.AcceptTcpClientAsync();
+            // Wait for client to connect and create a new thread that handles the client's commands to the server
+            // This allows us to handle multiple clients at once
+            TcpClient handler = await listener.AcceptTcpClientAsync();
 
-                _ = Task.Run(() => CreateClientThread(handler));
+            Thread connection = new Thread(CreateClientThread);
 
-                // connection.Start(handler);
-            }
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.Message);
+            connection.Start(handler);
         }
     }
 
     static async Task HandleServerAddressRequests()
     {
+        // Create a UDP listener to listen for requests attempting to connect to the server
         UdpClient listener = new UdpClient();
         listener.Client.Bind(new IPEndPoint(IPAddress.Any, _server.ServerAddressPort));
 
         while (true)
         {
+            // Recieve and decode the message that was retrieved from the client
             var result = await listener.ReceiveAsync();
             string message = Encoding.UTF8.GetString(result.Buffer);
 
+            // If the message matches what we've specified then send the server's local IP address back to the client
             if (message == "SERVER_ADDRESS")
             {
+                // Encode the IP address
                 byte[] response = Encoding.UTF8.GetBytes(_server.GetLocalIPv4Address().ToString());
 
                 // Send a response back to the requester
@@ -69,46 +62,51 @@ class Program
 
     static async void CreateClientThread(object? client)
     {
+        // Create a nullable connection. We'll receive the data for this from the client
         Connection? userConnection = null;
 
         try
         {
-            if (client is not null && client is TcpClient)
+            if (client is null || client is not TcpClient)
             {
-                NetworkStream stream = ((TcpClient)client).GetStream();
+                throw new InvalidOperationException("Client received is null or is not a valid TcpClient");
+            }
 
-                // First message of the stream will always be information regarding the user's connection
-                var (command, size) = await _server.GetMessageHeader(stream);
+            // Get the client's network stream
+            NetworkStream stream = ((TcpClient)client).GetStream();
 
-                if (size >= int.MaxValue || size >= _server.MAX_HEADER_SIZE)
-                    return;
+            // First message of the stream will always be information regarding the user's connection
+            var (command, size) = await _server.GetMessageHeader(stream);
 
-                byte[] content = new byte[size];
+            // If the client is attempting to send a large amount of data, 
+            // deny the request and return early
+            if (size >= int.MaxValue || size >= _server.MAX_HEADER_SIZE)
+                return;
 
-                await stream.ReadExactlyAsync(content);
+            // Create a buffer for the connection content
+            byte[] connectionContent = new byte[size];
 
-                userConnection = JsonSerializer.Deserialize<Connection>(Encoding.UTF8.GetString(content));
+            // Write the connection content from the stream to the buffer
+            await stream.ReadExactlyAsync(connectionContent);
 
-                if (userConnection is not null)
-                {
-                    userConnection.ConnectionStream = stream;
-                    _server.Connections.Add(userConnection);
+            // Deserialize the connection content and assign it to the userConnection variable declared
+            userConnection = JsonSerializer.Deserialize<Connection>(Encoding.UTF8.GetString(connectionContent));
 
-                    Console.WriteLine(userConnection.ConnectionAddress);
-                    Console.WriteLine(userConnection.ConnectionName);
-                    Console.WriteLine(userConnection.ConnectionPort);
+            // Ensure the connection isn't null
+            if (userConnection is not null)
+            {
+                // If not, then set the connection's stream to their network stream, 
+                // and add it to the internal list of connections
+                userConnection.ConnectionStream = stream;
+                _server.Connections.Add(userConnection);
 
-                    // userConnection.ConnectionPort = _server.ConnectionPort + _server.Connections.Count();
-                    // byte[] payload = _server.CreatePayload(Command.SendAvailablePort, BitConverter.GetBytes(userConnection.ConnectionPort));
-                    // await stream.WriteAsync(payload);
-                }
-
+                // Once a new connection has been added, update all of the other connected clients
                 await _server.SendFileListToConnections();
-
-                // New client connected, update other clients
                 await UpdateClientConnections();
 
-                await _server.HandleConnectedClient((TcpClient)client, isServer: true);
+                // Once we've taken care of our prerequisites, 
+                // let the server utility handle the incoming commands from the client
+                await _server.HandleConnectedClient((TcpClient)client);
             }
         }
         catch (IOException e)
@@ -128,6 +126,7 @@ class Program
 
     static async Task UpdateClientConnections()
     {
+        // Serialize the list of client connections and send the payload to the connected clients
         string json = JsonSerializer.Serialize(_server.Connections);
         byte[] payload = _server.CreatePayload(Command.GetConnections, Encoding.UTF8.GetBytes(json));
         

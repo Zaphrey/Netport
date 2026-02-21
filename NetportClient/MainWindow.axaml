@@ -3,8 +3,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="100" d:DesignHeight="100"
-        Width="700"
-        Height="300"
+        Width="1200"
+        Height="500"
         x:Class="client.MainWindow"
         Title="client">
     
@@ -14,7 +14,7 @@
             <!--     gr -->
             <!-- </StackPanel> -->
             <Grid RowDefinitions="Auto, *" RowSpacing="5">
-                <Button Click="Button_OnClick" Content="Upload"/>
+                <Button Click="SendFilesToServer" Content="Upload"/>
                 <ScrollViewer Grid.Row="1" HorizontalAlignment="Stretch">
                     <StackPanel Name="FileLabels" HorizontalAlignment="Stretch" Spacing="5" ClipToBounds="True">
                         <Border BorderThickness="0, 1, 0, 0" BorderBrush="AliceBlue" Padding="0, 5, 0, 0">
@@ -31,7 +31,9 @@
         </Border>
         <Border Grid.Column="1" Padding="5" CornerRadius="6" BorderThickness="1" BorderBrush="AliceBlue">
             <StackPanel Name="ConnectionList" HorizontalAlignment="Stretch">
-            
+                <TextBlock>
+                    Connected Clients
+                </TextBlock>
             </StackPanel>
         </Border>
         <Border Padding="5" Grid.Column="2" BorderBrush="AliceBlue" CornerRadius="6" BorderThickness="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="300">
